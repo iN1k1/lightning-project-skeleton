@@ -2,10 +2,10 @@ pydantic
 omegaconf
 albumentations
 einops
-signal
 opencv-python
 opencv-python-headless
-pandaspytorch-lightning
+pandas
+pytorch-lightning
 pytorch-msssim
 PyYAML
 scikit-image
