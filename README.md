@@ -21,11 +21,6 @@ git remote rm origin
 git remote add origin git@github.com:iN1k1/lightning-project-skeleton.git
 ```
 
-## remove the existing terraform state
-```shell
-rm -rf state
-```
-
 ## Setup.py
 Update name, description and url
 
@@ -43,9 +38,6 @@ rename `src/lightning_project_skeleton` to the package name you are willing to p
 
 ## Add your source code
 Add your source code
-
-## Update pipeline semver config
-change `key: pysatis-example-library/metadata/version` to your pipeline name in `config/pipeline/manage-defauly.yml`
 
 
 # Development
