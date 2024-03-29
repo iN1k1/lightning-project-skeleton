@@ -18,7 +18,7 @@ for example: my-library
 ## update the git remote of your repo
 ```shell
 git remote rm origin
-git remote add origin git@github.com:iN1k1/lightning-project-skeleton.git
+git remote add origin git@github.com:YOUR_USER/my-library.git
 ```
 
 ## Setup.py
