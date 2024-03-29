@@ -20,3 +20,4 @@ torchmetrics
 torchvision
 tqdm
 wandb
+jsonargparse[signatures]
