@@ -1,5 +1,5 @@
 Lightning Skeleton Library
-========================
+============================
 
 In order to create a new library change the following files:
 
@@ -8,9 +8,6 @@ In order to create a new library change the following files:
 
 ## rename the repo
 ```mv lightning-project-skeleton my-library```
-
-## Git-crypt unlock
-```git-crypt unlock```
 
 ## create your github repo
 for example: my-library
@@ -30,11 +27,8 @@ Add your dependencies
 ## README.md
 Update the name of the library
 
-## config/defaults.yaml
-update the `component` and `source_repository_url`
-
 ## Package name
-rename `src/lightning_project_skeleton` to the package name you are willing to publish.
+rename `src/lightning_project_skeleton` to `src/my-library` (or any other package name you are willing to publish).
 
 ## Add your source code
 Add your source code
@@ -43,5 +37,5 @@ Add your source code
 # Development
 
 ## Code guidelines
-- We use black formatter to format code and enforce style
-- Use strong types everywhere you can
+- We generally use black formatter to format code and enforce style (you are encouraged to do the same :))
+- Use strong types everywhere you can!
