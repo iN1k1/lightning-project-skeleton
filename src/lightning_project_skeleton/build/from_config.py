@@ -1,7 +1,7 @@
 import importlib
 import ast
 from typing import Optional, Tuple, Union
-
+import yaml
 from omegaconf import OmegaConf
 import os.path as osp
 
@@ -40,8 +40,8 @@ def __get_base_files(filename: str) -> list:
             else:
                 base_files = []
     elif file_format in ('.yml', '.yaml', '.json'):
-        import mmengine
-        cfg_dict = mmengine.load(filename)
+        with open(filename, 'r') as f:
+            cfg_dict = yaml.load(f, Loader=yaml.Loader)
         base_files = cfg_dict.get(BASE_KEY, [])
     else:
         raise FileNotFoundError(
@@ -137,7 +137,7 @@ def get_obj_from_str(string, reload=False):
 
 
 def instantiate_from_config(config):
-    print(config)
+    # print(config)
     if not "target" in config:
         raise KeyError("Expected key `target` to instantiate.")
     return get_obj_from_str(config["target"])(**config.get("params", dict()))
@@ -145,7 +145,7 @@ def instantiate_from_config(config):
 
 def load_config_from_py_file(filename):
     filename = osp.abspath(osp.expanduser(filename))
-    assert osp.exists(filename)
+    assert osp.exists(filename), f'Config file {filename} does not exist'
     fileExtname = osp.splitext(filename)[1]
     assert fileExtname in ['.py', '.json', '.yaml', '.yml']
 

@@ -7,7 +7,6 @@ import numpy as np
 from PIL import Image
 import torch
 import torchvision
-from lightning import seed_everything
 from lightning.pytorch.utilities.rank_zero import rank_zero_only
 import lightning as L
 from lightning.pytorch.callbacks import ModelCheckpoint, Callback, LearningRateMonitor
@@ -16,19 +15,20 @@ from build.from_config import instantiate_from_config ,load_config_from_py_file
 import wandb
 from lightning.pytorch.loggers import WandbLogger
 import albumentations as A
+from lightning_project_skeleton.logging.utils import rank_zero_log_only
+logger = logging.getLogger(__name__)
+
+
+def setup_logging():
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                        handlers=[
+                            logging.FileHandler("debug.log"),
+                            logging.StreamHandler()
+                        ])
+
 
 def get_parser(**parser_kwargs):
-    def str2bool(v):
-        if isinstance(v, bool):
-            return v
-        if v.lower() in ("yes", "true", "t", "y", "1"):
-            return True
-        elif v.lower() in ("no", "false", "f", "n", "0"):
-            return False
-        else:
-            raise argparse.ArgumentTypeError("Boolean value expected.")
-
-    #parser = argparse.ArgumentParser(**parser_kwargs)
     parser = LightningArgumentParser(**parser_kwargs, add_help=False, parse_as_dict=True)
     parser.add_lightning_class_args(L.Trainer, nested_key='trainer')
 
@@ -77,14 +77,17 @@ def get_parser(**parser_kwargs):
         default="",
         help="post-postfix for default name",
     )
-
+    parser.add_argument(
+        "-ld",
+        "--logdir",
+        type=str,
+        default="./training_logs",
+        help="Logging path",
+    )
     return parser
 
 
 def nondefault_trainer_args(opt):
-    #parser = argparse.ArgumentParser()
-    # TODO
-    # parser = Trainer.add_argparse_args(parser)
     parser = LightningArgumentParser(add_help=False, parse_as_dict=False)
     parser.add_lightning_class_args(L.Trainer, None)
     args = parser.parse_args([])
@@ -114,15 +117,47 @@ class SetupCallback(Callback):
             os.makedirs(self.ckptdir, exist_ok=True)
             os.makedirs(self.cfgdir, exist_ok=True)
 
-            print("Project config")
-            print(self.config)
+            rank_zero_log_only(logger, "Project config")
+            rank_zero_log_only(logger, OmegaConf.to_yaml(self.config))
             OmegaConf.save(self.config,
                            os.path.join(self.cfgdir, "{}-project.yaml".format(self.now)))
 
-            print("Lightning config")
-            print(self.lightning_config)
+            rank_zero_log_only(logger, "Lightning config")
+            rank_zero_log_only(logger, OmegaConf.to_yaml(self.lightning_config))
             OmegaConf.save(OmegaConf.create({"lightning": self.lightning_config}),
                            os.path.join(self.cfgdir, "{}-lightning.yaml".format(self.now)))
+
+            # Log code
+            pl_module.logger.experiment.log_code(
+                root="./",
+                name='code',
+                include_fn=lambda path: path.endswith(".py") or path.endswith(".yaml"),
+                exclude_fn=lambda path, root: os.path.relpath(path, root).startswith("training_logs/") or
+                                              os.path.relpath(path, root).startswith("lightning_logs/") or
+                                              os.path.relpath(path, root).startswith("output/") or
+                                              os.path.relpath(path, root).startswith("wandb/")
+            )
+
+            # Model profiling
+            # from deepspeed.profiling.flops_profiler.profiler import FlopsProfiler
+            # _ = trainer.estimated_stepping_batches # required to load the dataloader
+            # prof = FlopsProfiler(pl_module.model)
+            # profile_step = 10
+            # for step, batch in enumerate(trainer.train_dataloader):
+            #     if step == profile_step:
+            #         prof.start_profile()
+            #     batch = list(map(lambda x:x.to(pl_module.device), pl_module.get_input(batch)))
+            #     pl_module.model(*batch)
+            #
+            #     if step == profile_step:
+            #         prof.stop_profile()
+            #         # flops = prof.get_total_flops(as_string=True)
+            #         # params = prof.get_total_params(as_string=True)
+            #         prof.print_model_profile(profile_step=profile_step, output_file=os.path.join(pl_module.logger.save_dir, "model_profile.txt"))
+            #         prof.print_model_aggregated_profile()
+            #         # pl_module.logger.experiment.log_text(
+            #         prof.end_profile()
+            #         break
 
         else:
             # ModelCheckpoint callback created log directory --- remove it
@@ -281,7 +316,7 @@ if __name__ == "__main__":
     #           target: importpath
     #           params:
     #               key: value
-
+    setup_logging()
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 
     # add cwd for convenience and to make classes in this file available when
@@ -303,7 +338,7 @@ if __name__ == "__main__":
             raise ValueError("Cannot find {}".format(opt.resume))
         if os.path.isfile(opt.resume):
             paths = opt.resume.split("/")
-            idx = len(paths) - paths[::-1].index("logs_2") + 1
+            idx = len(paths) - paths[::-1].index(Path(opt.logdir).stem) + 1
             logdir = "/".join(paths[:idx])
             ckpt = opt.resume
         else:
@@ -313,9 +348,9 @@ if __name__ == "__main__":
 
         opt.resume_from_checkpoint = ckpt
         base_configs = sorted(glob.glob(os.path.join(logdir, "configs/*.yaml")))
-        opt.config = base_configs + opt.config
+        # opt.config = base_configs + opt.config
         _tmp = logdir.split("/")
-        nowname = _tmp[_tmp.index("logs_2") + 1]
+        nowname = _tmp[-1]#_tmp.index("training_logs") + 1]
     else:
         if opt.name:
             name = "_" + opt.name
@@ -326,11 +361,11 @@ if __name__ == "__main__":
         else:
             name = ""
         nowname = now + name + opt.postfix
-        logdir = os.path.join("/media/TBData2/sr_logs", nowname)
+        logdir = os.path.join(opt.logdir, nowname)
 
     ckptdir = os.path.join(logdir, "checkpoints")
     cfgdir = os.path.join(logdir, "configs")
-    seed_everything(opt.seed)
+    L.seed_everything(opt.seed)
 
     # Load config
     config = OmegaConf.create(load_config_from_py_file(opt.config))
@@ -346,22 +381,18 @@ if __name__ == "__main__":
         cpu = True
     else:
         gpuinfo = trainer_config['devices']
-        print(f"Running on GPUs {gpuinfo}")
+        rank_zero_log_only(logger, f"Running on {gpuinfo} GPUs")
         cpu = False
     trainer_opt = argparse.Namespace(**trainer_config)
     lightning_config.trainer = trainer_config
 
     # model
-    model = instantiate_from_config(config.model)
+    model = instantiate_from_config(OmegaConf.to_object(config.model))
 
     # trainer and callbacks
     trainer_kwargs = dict()
 
     # default logger configs
-    # NOTE wandb < 0.10.0 interferes with shutdown
-    # wandb >= 0.10.0 seems to fix it but still interferes with pudb
-    # debugging (wrongly sized pudb ui)
-    # thus prefer testtube for now
     default_logger_cfgs = {
         "wandb": {
             "target": "lightning.pytorch.loggers.WandbLogger",
@@ -370,7 +401,10 @@ if __name__ == "__main__":
                 "save_dir": logdir,
                 "offline": False,
                 "id": nowname,
-                "project": "srv2"
+                "project": lightning_config.get("logging", OmegaConf.create()).get("project_name", "default"),
+                "tags": lightning_config.get("logging", OmegaConf.create()).get("tags", None),
+                "save_code": True,
+                "settings" : {"code_dir":".."}
             }
         }
     }
@@ -413,7 +447,6 @@ if __name__ == "__main__":
            "target": "train.LearningRateMonitor",
            "params": {
                "logging_interval": "step",
-               # "log_momentum": True
            }
         },
         "checkpoint_callback": {
@@ -423,7 +456,7 @@ if __name__ == "__main__":
                     "filename": "{epoch:04}",
                     "verbose": True,
                     "save_last": True,
-                    "monitor": "val/psnr",
+                    "monitor": "val/log_metric",
                     "save_top_k": 3,
                     "mode": "max"
                 }
@@ -436,15 +469,6 @@ if __name__ == "__main__":
         default_callbacks_cfg["checkpoint_callback"]["params"]["monitor"] = model.monitor
         default_callbacks_cfg["checkpoint_callback"]["params"]["save_top_k"] = 3
 
-
-    #callbacks_cfg = lightning_config.callbacks or OmegaConf.create()
-    callbacks_cfg = OmegaConf.create()
-    callbacks_cfg = OmegaConf.merge(default_callbacks_cfg, callbacks_cfg)
-    trainer_kwargs["callbacks"] = [instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg]
-
-    # trainer = Trainer.from_argparse_args(trainer_opt, **trainer_kwargs)
-    trainer = L.Trainer(**(vars(trainer_opt) | trainer_kwargs))
-
     # data
     data = instantiate_from_config(config.data)
     # NOTE according to https://pytorch-lightning.readthedocs.io/en/latest/datamodules.html
@@ -453,6 +477,13 @@ if __name__ == "__main__":
     data.prepare_data()
     data.setup()
 
+    callbacks_cfg = OmegaConf.create()
+    callbacks_cfg = OmegaConf.merge(default_callbacks_cfg, callbacks_cfg)
+    trainer_kwargs["callbacks"] = [instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg]
+
+    # Setup trainer
+    trainer = L.Trainer(**(vars(trainer_opt) | trainer_kwargs))
+
     # configure learning rate
     bs, base_lr = config.data.params.train_batch_size, config.model.params.optimizer.base_learning_rate
     if not cpu:
@@ -460,18 +491,17 @@ if __name__ == "__main__":
     else:
         ngpu = 1
     accumulate_grad_batches = lightning_config.trainer.accumulate_grad_batches or 1
-    print(f"accumulate_grad_batches = {accumulate_grad_batches}")
+    rank_zero_log_only(logger, f"accumulate_grad_batches = {accumulate_grad_batches}")
     lightning_config.trainer.accumulate_grad_batches = accumulate_grad_batches
-    model.optimizer_config['learning_rate'] = accumulate_grad_batches * ngpu * bs * base_lr
-    print(
-        "Setting learning rate to {:.2e} = {} (accumulate_grad_batches) * {} (num_gpus) * {} (batchsize) * {:.2e} (base_lr)".format(
-            model.optimizer_config['learning_rate'], accumulate_grad_batches, ngpu, bs, base_lr))
+    lr = accumulate_grad_batches * ngpu * bs * base_lr
+    rank_zero_log_only(logger, f"Setting learning rate to {lr:.2e} = {accumulate_grad_batches} "
+                               f"(accumulate_grad_batches) * {ngpu} (num_gpus) * {bs} (batchsize) * {base_lr:.2e} (base_lr)")
 
     # allow checkpointing via USR1
     def melk(*args, **kwargs):
         # run all checkpoint hooks
         if trainer.global_rank == 0:
-            print("Summoning checkpoint.")
+            rank_zero_log_only(logger, "Summoning checkpoint.")
             ckpt_path = os.path.join(ckptdir, "last.ckpt")
             trainer.save_checkpoint(ckpt_path)
 
@@ -485,7 +515,7 @@ if __name__ == "__main__":
 
     # run
     try:
-        trainer.fit(model, data)
+        trainer.fit(model, data, ckpt_path=opt.resume_from_checkpoint if opt.resume else None)
     except Exception:
         melk()
         raise
