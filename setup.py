@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 import os
-
 from setuptools import setup, find_packages
-from datetime import datetime
 
 if os.path.exists("../version/version"):
     with open("../version/version") as f:
         version = f.read()
 else:
-    version = "0.1.0dev"
+    version = "0.2.0dev"
 
 
 with open("README.md") as f:

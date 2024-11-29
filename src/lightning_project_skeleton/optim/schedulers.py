@@ -1,19 +1,19 @@
-import logging
-import math
+import structlog
 import torch
 from typing import List
 from torch.optim.lr_scheduler import SequentialLR
 from lightning_project_skeleton.build.from_config import instantiate_from_config
 
-_logger = logging.getLogger(__name__)
+_logger = structlog.getLogger(__name__)
 
 
 class LRScheduler(SequentialLR):
     def __init__(
-            self,
-            optimizer: torch.optim.Optimizer,
-            schedulers: List[torch.optim.lr_scheduler._LRScheduler],
-            milestones: List[int]) -> None:
+        self,
+        optimizer: torch.optim.Optimizer,
+        schedulers: List[torch.optim.lr_scheduler._LRScheduler],
+        milestones: List[int],
+    ) -> None:
         # Build schedulers from configs
         self._schedulers = []
         for cfg in schedulers:
@@ -22,9 +22,11 @@ class LRScheduler(SequentialLR):
             self._schedulers.append(scheduler)
 
         # Sequential scheduler
-        super().__init__(optimizer=optimizer,
-                         schedulers=self._schedulers,
-                         milestones=milestones)
+        super().__init__(
+            optimizer=optimizer,
+            schedulers=self._schedulers,
+            milestones=milestones,
+        )
 
 
 if __name__ == '__main__':
@@ -36,19 +38,15 @@ if __name__ == '__main__':
             schedulers=[
                 dict(
                     target='torch.optim.lr_scheduler.ConstantLR',
-                    params=dict(
-                        factor=1.0,
-                        total_iters=warmup_epochs
-                    )
+                    params=dict(factor=1.0, total_iters=warmup_epochs),
                 ),
                 dict(
                     target='torch.optim.lr_scheduler.CosineAnnealingLR',
                     params=dict(
-                        T_max=total_epochs - warmup_epochs,
-                        eta_min=1e-5
-                    )
-                )
-            ]
+                        T_max=total_epochs - warmup_epochs, eta_min=1e-5
+                    ),
+                ),
+            ],
         ),
         dict(
             milestones=[warmup_epochs],
@@ -58,25 +56,25 @@ if __name__ == '__main__':
                     params=dict(
                         start_factor=0.0001,
                         end_factor=1.0,
-                        total_iters=warmup_epochs
-                    )
+                        total_iters=warmup_epochs,
+                    ),
                 ),
                 dict(
                     target='torch.optim.lr_scheduler.CosineAnnealingLR',
                     params=dict(
-                        T_max=total_epochs - warmup_epochs,
-                        eta_min=1e-5
-                    )
-                )
-            ]
+                        T_max=total_epochs - warmup_epochs, eta_min=1e-5
+                    ),
+                ),
+            ],
         ),
-
     ]
 
     for cfg in test_configs:
 
         # Instantiate the scheduler
-        optimizer = torch.optim.AdamW(params=[torch.nn.Parameter(torch.randn(10, 10))])
+        optimizer = torch.optim.AdamW(
+            params=[torch.nn.Parameter(torch.randn(10, 10))]
+        )
         scheduler = LRScheduler(optimizer=optimizer, **cfg)
 
         # Training loop

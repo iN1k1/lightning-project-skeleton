@@ -1,9 +1,16 @@
-import argparse, os, sys, datetime, glob
-import signal
+import argparse
 import copy
-from omegaconf import OmegaConf
+import datetime
+import glob
+import os
+import signal
+import sys
+
 import lightning as L
+import structlog
 from lightning.pytorch.cli import LightningArgumentParser
+from omegaconf import OmegaConf
+
 from lightning_project_skeleton.build.from_config import (
     instantiate_from_config,
     load_config_from_py_file,
@@ -12,7 +19,6 @@ from lightning_project_skeleton.logging.utils import (
     rank_zero_log_only,
     configure_logger,
 )
-import structlog
 
 logger = structlog.getLogger(__name__)
 

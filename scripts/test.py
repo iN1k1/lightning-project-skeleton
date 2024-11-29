@@ -1,4 +1,4 @@
-import argparse, os, sys, datetime, glob, importlib
+import argparse, os
 from omegaconf import OmegaConf
 import lightning as L
 from lightning.pytorch.cli import LightningArgumentParser
@@ -10,7 +10,6 @@ from lightning_project_skeleton.build.from_config import (
 
 def get_parser(**parser_kwargs):
 
-    # parser = argparse.ArgumentParser(**parser_kwargs)
     parser = LightningArgumentParser(
         **parser_kwargs, add_help=False, parse_as_dict=True
     )
