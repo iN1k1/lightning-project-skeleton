@@ -1,15 +1,12 @@
-import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import math
-from functools import partial
-from typing import Optional, Dict, Union, List, Callable, Tuple
-from einops import rearrange
+from timm.layers import trunc_normal_
+
 
 def _common_init_weights(m):
     if isinstance(m, nn.Linear):
-        trunc_normal_(m.weight, std=.02)
+        trunc_normal_(m.weight, std=0.02)
         if isinstance(m, nn.Linear) and m.bias is not None:
             nn.init.constant_(m.bias, 0)
     elif isinstance(m, nn.LayerNorm):
@@ -24,19 +21,27 @@ def _common_init_weights(m):
 
 
 class DummyModel(nn.Module):
-    def __init__(self,
-                 num_classes: int = 1,
-                 ):
+    def __init__(
+        self,
+        in_ch: int,
+        num_classes: int = 1,
+    ):
 
         super(DummyModel, self).__init__()
 
         # Model
-        self.features = nn.Linear(512, 32)
-        self.head = nn.Linear(32, num_classes)
+        self.features = nn.Sequential(
+            nn.Conv2d(in_ch, 32, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(inplace=True),
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+        )
+        self.head = nn.Linear(64, num_classes)
 
         # Initialize weights
         self.apply(_common_init_weights)
-
 
     @torch.jit.ignore
     def no_weight_decay(self):
@@ -46,17 +51,13 @@ class DummyModel(nn.Module):
                 nwd.add(n)
         return nwd
 
-    def get_num_layers(self):
-        return len(self.features) + len(self.head)
-
-    def forward_features(self, x):
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
         return self.features(x)
 
-    def forward_head(self, x):
+    def forward_head(self, x: torch.Tensor) -> torch.Tensor:
         return self.head(x)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.forward_features(x)
         x = self.forward_head(x)
         return x
-

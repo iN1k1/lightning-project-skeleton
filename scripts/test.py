@@ -2,18 +2,37 @@ import argparse, os, sys, datetime, glob, importlib
 from omegaconf import OmegaConf
 import lightning as L
 from lightning.pytorch.cli import LightningArgumentParser
-from lightning_project_skeleton.build.from_config import instantiate_from_config, load_config_from_py_file
+from lightning_project_skeleton.build.from_config import (
+    instantiate_from_config,
+    load_config_from_py_file,
+)
 
 
 def get_parser(**parser_kwargs):
 
     # parser = argparse.ArgumentParser(**parser_kwargs)
-    parser = LightningArgumentParser(**parser_kwargs, add_help=False, parse_as_dict=True)
+    parser = LightningArgumentParser(
+        **parser_kwargs, add_help=False, parse_as_dict=True
+    )
     parser.add_lightning_class_args(L.Trainer, nested_key='trainer')
 
-    parser.add_argument('-ckpt', '--checkpoint', required=True, type=str, help='Model checkpoint path')
-    parser.add_argument('-cfg', '--config', required=True, type=str, help="Config path")
-    parser.add_argument('-o', '--output-dir', type=str, help="Output directory path (default: ./output)", default='./output')
+    parser.add_argument(
+        '-ckpt',
+        '--checkpoint',
+        required=True,
+        type=str,
+        help='Model checkpoint path',
+    )
+    parser.add_argument(
+        '-cfg', '--config', required=True, type=str, help="Config path"
+    )
+    parser.add_argument(
+        '-o',
+        '--output-dir',
+        type=str,
+        help="Output directory path (default: ./output)",
+        default='./output',
+    )
 
     return parser
 
@@ -37,8 +56,12 @@ if __name__ == "__main__":
 
     # merge trainer cli with config
     lightning_config = config.pop("lightning", OmegaConf.create())
-    trainer_config = OmegaConf.merge(*[OmegaConf.create(vars(opt)).trainer,
-                                       lightning_config.get("trainer", OmegaConf.create())])
+    trainer_config = OmegaConf.merge(
+        *[
+            OmegaConf.create(vars(opt)).trainer,
+            lightning_config.get("trainer", OmegaConf.create()),
+        ]
+    )
     trainer_opt = argparse.Namespace(**trainer_config)
     lightning_config.trainer = trainer_config
 
@@ -46,14 +69,14 @@ if __name__ == "__main__":
     model = instantiate_from_config(OmegaConf.to_object(config.model))
 
     # Ensure 32bit precision at validation
-    trainer_kwargs = {'precision':'32-true'}
+    trainer_kwargs = {'precision': '32-true'}
 
     # TODO: Add custom callbacks if needed
     # default_callbacks_cfg = {
     #     "score_logger_callback": {
     #         "target": "gait.logging.score_logger.ScoreLoggerCallback",
     #         "params": {
-    #             "logdir": opt.output_dir,
+    #             "_logdir": opt.output_dir,
     #         }
     #     }
     # }
