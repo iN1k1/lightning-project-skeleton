@@ -1,41 +1,43 @@
-Lightning Skeleton Library
-============================
+# ⚡️ Lightning Skeleton Library
 
-In order to create a new library change the following files:
+The Lightning Skeleton Library is a template repository designed to help you quickly set up a new machine learning project using PyTorch Lightning. This repository provides a structured and scalable framework for your deep learning experiments, including model training, evaluation, and data handling.
 
-## Clone this repo
-```git clone git@github.com:iN1k1/lightning-project-skeleton.git```
+## 🚀 Getting Started
 
-## rename the repo
-```mv lightning-project-skeleton my-library```
+### 📥 Clone this Repository
 
-## create your github repo
-for example: my-library
-
-## update the git remote of your repo
 ```shell
-git remote rm origin
-git remote add origin git@github.com:YOUR_USER/my-library.git
+git clone git@github.com:iN1k1/lightning-project-skeleton.git
 ```
 
-## Setup.py
-Update name, description and url
+### 🌐 Create Your GitHub Repository
 
-## requirements.txt
-Add your dependencies
-
-## README.md
-Update the name of the library
-
-## Package name
-rename `src/lightning_project_skeleton` to `src/my-library` (or any other package name you are willing to publish).
-
-## Add your source code
-Add your source code
+Create a new repository on GitHub, for example: `git@github.com:iN1k1/new-amazing-project` .
 
 
-# Development
+### 🤖 Run the Automation Script
 
-## Code guidelines
-- We generally use black formatter to format code and enforce style (you are encouraged to do the same :))
-- Use strong types everywhere you can!
+To automate the whole renaming process, just run the provided script and folow the instructions:
+
+```shell
+./rename_repo.sh
+```
+
+## 🛠️ Example Usage
+
+To run an example training script, use the following command:
+
+```shell
+PYTHONPATH=./src python scripts/train.py --config ./configs/example/dummy_example.py
+```
+
+## 🧑‍💻 Development
+
+### 📏 Code Guidelines
+
+- We use the `black` formatter to format code and enforce style. You are encouraged to do the same.
+- Use strong types wherever possible to ensure code clarity and maintainability.
+
+## 📜 License
+
+This project is licensed under the MIT License. See the `LICENSE` file for more details.
