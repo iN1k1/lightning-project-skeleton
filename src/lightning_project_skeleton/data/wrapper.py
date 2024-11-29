@@ -2,8 +2,8 @@ from torch.utils.data import DataLoader, Dataset
 from typing import Dict
 from omegaconf import OmegaConf
 from lightning import pytorch as pl
-from ..build.from_config import instantiate_from_config
-from ..logging.utils import rank_zero_log_only
+from lightning_project_skeleton.build.from_config import instantiate_from_config
+from lightning_project_skeleton.logging.utils import rank_zero_log_only
 import structlog
 
 logger = structlog.getLogger(__name__)
