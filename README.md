@@ -60,6 +60,7 @@ The configuration files use a dictionary format to define various components of 
 component is specified using a `target` key, which indicates the class or function to be instantiated, and a `params`
 key, which provides the parameters to be passed to the target.
 
+Within the `dummy_model.py` you find a the main `model` config dictionary containig the following keys:
 - `modelconfig`: Defines the model architecture. The `target` is the model class (e.g., `torchvision.models.resnet18`),
   and
   `params` include any initialization parameters (e.g., `pretrained`, `num_classes`).
@@ -73,8 +74,10 @@ key, which provides the parameters to be passed to the target.
 - `scheduler`: Sets up the learning rate scheduler. The `target` is the scheduler class (e.g.,
   `torch.optim.lr_scheduler.StepLR`), and `params` include scheduler-specific settings (e.g., `step_size`, `gamma`).
 
-- `dataset`: Defines the dataset to be used. The `target` is the dataset class (e.g., `torchvision.datasets.CIFAR10`),
-  and `params` include dataset-specific options (e.g., `root`, `train`, `download`, `transform`).
+Within the `dummy_data.py` you find a similar structure using the `data` config dictionary containig the following keys:
+
+- `train` and `val`: Define the datasets to be used. The `target` is the dataset class (e.g., `lightning_project_skeleton.data.example.ExampleDataset`),
+  and `params` include dataset-specific options (e.g., `phase`, `transform`).
 
 The `_base_` key is used to include common configurations shared across multiple configuration files. It allows for
 reusability and modularity by referencing a base configuration file and extending or overriding its settings.
