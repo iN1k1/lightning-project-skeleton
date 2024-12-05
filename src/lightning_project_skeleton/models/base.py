@@ -8,10 +8,10 @@ from torch.nn.modules.batchnorm import _BatchNorm
 from lightning.pytorch.utilities import grad_norm
 from timm.optim import create_optimizer
 from argparse import Namespace
-import logging
+import structlog
 
 
-_logger = logging.getLogger(__name__)
+_logger = structlog.getLogger(__name__)
 
 
 class LightningBaseModel(pl.LightningModule):
