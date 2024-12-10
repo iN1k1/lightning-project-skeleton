@@ -16,3 +16,6 @@ data = dict(
         )
     )
 )
+
+
+callbacks = dict()

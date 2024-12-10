@@ -28,7 +28,7 @@ fi
 # Change the URL in setup.py
 sed -i '' 's|author="Niki Martinel"|author="New Author"|g' setup.py
 sed -i '' 's|author_email="niki.martinel@gmail.com"|author_email="newauthor@xyz.abc"|g' setup.py
-sed -i '' 's|url="https://github.com/iN1k1/lightning-project-skeleton"|url="$github_repo_url"|g' setup.py
+sed -i '' 's|url="https://github.com/iN1k1/lightning-project-skeleton"|url="'$github_repo_url'"|g' setup.py
 
 # Refresh the README.md
 echo "# $library_repo_name" > README.md
